@@ -6,7 +6,8 @@ import csv
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFileDialog, QWidget, QDialog, QScrollArea,
-    QGridLayout, QInputDialog, QTabWidget, QMenuBar, QMenu, QAction, QLineEdit
+    QGridLayout, QInputDialog, QTabWidget, QMenuBar, QMenu, QAction,
+    QLineEdit, QComboBox
 )
 from PyQt5.QtGui import QIcon, QPixmap, QKeySequence
 from PyQt5.QtCore import Qt, QEvent
@@ -20,43 +21,6 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
-
-# Key Mapping Dictionary
-KEY_MAP = {
-    'ctrl_r': keyboard.Key.ctrl_r,
-    'ctrl_l': keyboard.Key.ctrl_l,
-    'alt_r': keyboard.Key.alt_r,
-    'alt_l': keyboard.Key.alt_l,
-    'shift_r': keyboard.Key.shift_r,
-    'shift_l': keyboard.Key.shift_l,
-    'space': keyboard.Key.space,
-    'enter': keyboard.Key.enter,
-    'esc': keyboard.Key.esc,
-    'tab': keyboard.Key.tab,
-    'backspace': keyboard.Key.backspace,
-    'delete': keyboard.Key.delete,
-    'home': keyboard.Key.home,
-    'end': keyboard.Key.end,
-    'page_up': keyboard.Key.page_up,
-    'page_down': keyboard.Key.page_down,
-    'left': keyboard.Key.left,
-    'right': keyboard.Key.right,
-    'up': keyboard.Key.up,
-    'down': keyboard.Key.down,
-    'f1': keyboard.Key.f1,
-    'f2': keyboard.Key.f2,
-    'f3': keyboard.Key.f3,
-    'f4': keyboard.Key.f4,
-    'f5': keyboard.Key.f5,
-    'f6': keyboard.Key.f6,
-    'f7': keyboard.Key.f7,
-    'f8': keyboard.Key.f8,
-    'f9': keyboard.Key.f9,
-    'f10': keyboard.Key.f10,
-    'f11': keyboard.Key.f11,
-    'f12': keyboard.Key.f12,
-    # Add more key mappings as needed
-}
 
 # Application Constants
 APP_NAME = "ShinyCounter"
@@ -123,48 +87,62 @@ IMAGE_LABEL_CLASS = "ImageLabel"
 class OptionsWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.parent = parent
         self.setWindowTitle("Options")
         self.setModal(True)
         self.resize(300, 200)
         self.init_ui()
-        self.parent = parent  # Store the parent reference
         self.load_hotkeys()
 
+    def get_available_keys(self):
+        """Get all available keyboard.Key attributes"""
+        return [attr for attr in dir(keyboard.Key) 
+                if not attr.startswith('_') and attr != 'from_char']
 
     def init_ui(self):
         layout = QVBoxLayout(self)
 
-        self.main_hotkey_label = QLabel("Main HOTKEY:")
-        self.main_hotkey_input = QLineEdit()
-        self.main_hotkey_input.setPlaceholderText("Enter key name (e.g., ctrl_l)")
-
-        self.secondary_hotkey_label = QLabel("Secondary HOTKEY:")
-        self.secondary_hotkey_input = QLineEdit()
-        self.secondary_hotkey_input.setPlaceholderText("Enter key name (e.g., shift_r)")
+        # Main hotkey dropdown
+        self.main_hotkey_label = QLabel("Main Hotkey:")
+        self.main_hotkey_combo = QComboBox()
+        self.main_hotkey_combo.addItems(self.get_available_keys())
+        
+        # Secondary hotkey dropdown
+        self.secondary_hotkey_label = QLabel("Secondary Hotkey:")
+        self.secondary_hotkey_combo = QComboBox()
+        self.secondary_hotkey_combo.addItems(['None'] + self.get_available_keys())
 
         save_button = QPushButton("Save")
         save_button.clicked.connect(self.save_hotkeys)
 
         layout.addWidget(self.main_hotkey_label)
-        layout.addWidget(self.main_hotkey_input)
+        layout.addWidget(self.main_hotkey_combo)
         layout.addWidget(self.secondary_hotkey_label)
-        layout.addWidget(self.secondary_hotkey_input)
+        layout.addWidget(self.secondary_hotkey_combo)
         layout.addWidget(save_button)
 
-    def load_hotkeys(self):
-        try:
-            if os.path.exists(os.path.join(CONFIG_DIR, "hotkeys.csv")):
-                with open(os.path.join(CONFIG_DIR, "hotkeys.csv"), 'r') as file:
-                    reader = csv.reader(file)
-                    hotkeys = {rows[0]: rows[1] for rows in reader}
-                    self.main_hotkey_input.setText(hotkeys.get("Main HOTKEY", ""))
-                    self.secondary_hotkey_input.setText(hotkeys.get("Secondary HOTKEY", ""))
-        except Exception as e:
-            print(f"Error loading hotkeys: {e}")
+def load_hotkeys(self):
+    try:
+        if os.path.exists(os.path.join(CONFIG_DIR, "hotkeys.csv")):
+            with open(os.path.join(CONFIG_DIR, "hotkeys.csv"), 'r') as file:
+                reader = csv.reader(file)
+                hotkeys = {rows[0]: rows[1] for rows in reader}
+                main_hotkey = hotkeys.get("Main HOTKEY", "ctrl_r")
+                secondary_hotkey = hotkeys.get("Secondary HOTKEY", "None")
+                
+                self.main_hotkey = getattr(keyboard.Key, main_hotkey)
+                self.secondary_hotkey = None if secondary_hotkey == 'None' else getattr(keyboard.Key, secondary_hotkey)
+        else:
+            self.main_hotkey = keyboard.Key.ctrl_r  # Default
+            self.secondary_hotkey = None
+    except Exception as e:
+        print(f"Error loading hotkeys: {e}")
+        self.main_hotkey = keyboard.Key.ctrl_r
+        self.secondary_hotkey = None
 
     def save_hotkeys(self):
-        main_hotkey = self.main_hotkey_input.text().lower().replace(" ", "_")
-        secondary_hotkey = self.secondary_hotkey_input.text().lower().replace(" ", "_")
+        main_hotkey = self.main_hotkey_combo.currentText()
+        secondary_hotkey = self.secondary_hotkey_combo.currentText()
 
         if not os.path.exists(CONFIG_DIR):
             os.makedirs(CONFIG_DIR)
@@ -176,12 +154,12 @@ class OptionsWindow(QDialog):
 
         # Update parent's hotkeys immediately
         if self.parent:
-            self.parent.main_hotkey = KEY_MAP.get(main_hotkey, HOTKEY_ADD)
-            self.parent.secondary_hotkey = KEY_MAP.get(secondary_hotkey, None)
-            # Restart the listener with new hotkeys
+            self.parent.main_hotkey = getattr(keyboard.Key, main_hotkey)
+            self.parent.secondary_hotkey = None if secondary_hotkey == 'None' else getattr(keyboard.Key, secondary_hotkey)
             self.parent.restart_listener()
 
         self.accept()
+
 
 class PokemonSelectDialog(QDialog):
     def __init__(self, parent=None, image_path=None):
