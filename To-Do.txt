@@ -14,14 +14,14 @@ Ideas:
     - Add "transparency" slider
     - Add "sound" checkbox
     - Add "sound" configuration (custom sound)
-    - Add "hotkey" configuration
+    # - Add "hotkey" configuration
     - Add "filepath" configuration
     - Add "increment" configuration
     - Move "reset counter" to configuration menu
     - Add "reset config to default" button
 - Add confirmation screen for resetting the counter
 
-# Unlikely:
+Unlikely:
 - Add link to shinytracker to track your pokemon
 - Android App?
-- Make it so you can add multiple Pokemon at once
+# - Make it so you can add multiple Pokemon at once
