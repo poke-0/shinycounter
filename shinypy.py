@@ -2,17 +2,16 @@ import sys
 import os
 import glob
 import yaml
+import csv
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFileDialog, QWidget, QDialog, QScrollArea,
-    QGridLayout, QInputDialog, QTabWidget, QMenuBar, QMenu, QAction,
-    QLineEdit
+    QGridLayout, QInputDialog, QTabWidget, QMenuBar, QMenu, QAction, QLineEdit
 )
 from PyQt5.QtGui import QIcon, QPixmap, QKeySequence
 from PyQt5.QtCore import Qt, QEvent
 from pynput import keyboard
 from pygame import mixer
-import csv
 
 def resource_path(relative_path):
     try:
@@ -21,6 +20,21 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
+# Key Mapping Dictionary
+KEY_MAP = {
+    'ctrl_r': keyboard.Key.ctrl_r,
+    'ctrl_l': keyboard.Key.ctrl_l,
+    'alt_r': keyboard.Key.alt_r,
+    'alt_l': keyboard.Key.alt_l,
+    'shift_r': keyboard.Key.shift_r,
+    'shift_l': keyboard.Key.shift_l,
+    'space': keyboard.Key.space,
+    'enter': keyboard.Key.enter,
+    'esc': keyboard.Key.esc,
+    'tab': keyboard.Key.tab,
+    # Add more mappings as needed
+}
 
 # Application Constants
 APP_NAME = "ShinyCounter"
@@ -91,6 +105,7 @@ class OptionsWindow(QDialog):
         self.setModal(True)
         self.resize(300, 200)
         self.init_ui()
+        self.load_hotkeys()
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -126,6 +141,19 @@ class OptionsWindow(QDialog):
                 self.secondary_hotkey_input.setText(key_name)
             return True
         return super().eventFilter(obj, event)
+
+    def load_hotkeys(self):
+        try:
+            if os.path.exists(os.path.join(CONFIG_DIR, "hotkeys.csv")):
+                with open(os.path.join(CONFIG_DIR, "hotkeys.csv"), 'r') as file:
+                    reader = csv.reader(file)
+                    hotkeys = {rows[0]: rows[1] for rows in reader}
+                    if "Main HOTKEY" in hotkeys:
+                        self.main_hotkey_input.setText(hotkeys["Main HOTKEY"].replace("_", " ").title())
+                    if "Secondary HOTKEY" in hotkeys:
+                        self.secondary_hotkey_input.setText(hotkeys["Secondary HOTKEY"].replace("_", " ").title())
+        except Exception as e:
+            print(f"Error loading hotkeys: {e}")
 
     def save_hotkeys(self):
         main_hotkey = self.main_hotkey_input.text().lower().replace(" ", "_")
@@ -279,7 +307,7 @@ class ShinyCounter(QMainWindow):
 
         # Initialize pygame mixer
         mixer.init()
-        self.add_sound = mixer.Sound(resource_path(SOUND_FILE))
+        self.add_sound = mixer.Sound(SOUND_FILE)
         self.add_sound.set_volume(SOUND_VOLUME)
 
         # Initialize variables
