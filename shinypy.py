@@ -5,10 +5,10 @@ import yaml
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFileDialog, QWidget, QDialog, QScrollArea,
-    QGridLayout, QInputDialog, QTabWidget
+    QGridLayout, QInputDialog, QTabWidget, QMenuBar, QMenu, QAction, QLineEdit
 )
-from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon, QPixmap, QKeySequence
+from PyQt5.QtCore import Qt, QEvent
 from pynput import keyboard
 from pygame import mixer
 import csv
@@ -82,6 +82,65 @@ POKEMON_FILE_PATTERN = "*.png"
 # CSS Classes
 COUNTER_LABEL_CLASS = "CounterLabel"
 IMAGE_LABEL_CLASS = "ImageLabel"
+
+class OptionsWindow(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("Options")
+        self.setModal(True)
+        self.resize(300, 200)
+        self.init_ui()
+
+    def init_ui(self):
+        layout = QVBoxLayout(self)
+
+        self.main_hotkey_label = QLabel("Main HOTKEY:")
+        self.main_hotkey_input = QLineEdit()
+        self.main_hotkey_input.setPlaceholderText("Press a key")
+        self.main_hotkey_input.setReadOnly(True)
+        self.main_hotkey_input.installEventFilter(self)
+
+        self.secondary_hotkey_label = QLabel("Secondary HOTKEY:")
+        self.secondary_hotkey_input = QLineEdit()
+        self.secondary_hotkey_input.setPlaceholderText("Press a key")
+        self.secondary_hotkey_input.setReadOnly(True)
+        self.secondary_hotkey_input.installEventFilter(self)
+
+        save_button = QPushButton("Save")
+        save_button.clicked.connect(self.save_hotkeys)
+
+        layout.addWidget(self.main_hotkey_label)
+        layout.addWidget(self.main_hotkey_input)
+        layout.addWidget(self.secondary_hotkey_label)
+        layout.addWidget(self.secondary_hotkey_input)
+        layout.addWidget(save_button)
+
+        self.setLayout(layout)
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.KeyPress:
+            key = event.key()
+            key_name = QKeySequence(key).toString()
+            if obj == self.main_hotkey_input:
+                self.main_hotkey_input.setText(key_name)
+            elif obj == self.secondary_hotkey_input:
+                self.secondary_hotkey_input.setText(key_name)
+            return True
+        return super().eventFilter(obj, event)
+
+    def save_hotkeys(self):
+        main_hotkey = self.main_hotkey_input.text()
+        secondary_hotkey = self.secondary_hotkey_input.text()
+
+        if not os.path.exists(CONFIG_DIR):
+            os.makedirs(CONFIG_DIR)
+
+        with open(os.path.join(CONFIG_DIR, "hotkeys.csv"), 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Main HOTKEY", main_hotkey])
+            writer.writerow(["Secondary HOTKEY", secondary_hotkey])
+
+        self.accept()
 
 class PokemonSelectDialog(QDialog):
     def __init__(self, parent=None, image_path=None):
@@ -197,7 +256,6 @@ class PokemonSelectDialog(QDialog):
         self.selected_pokemon = image_path
         self.accept()
 
-
 class ShinyCounter(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -212,7 +270,7 @@ class ShinyCounter(QMainWindow):
         )
         self.setMinimumSize(*MINIMUM_WINDOW_SIZE)
         self.setMaximumSize(*MAXIMUM_WINDOW_SIZE)
-        self.setWindowIcon(QIcon(ICON_PATH))
+        self.setWindowIcon(QIcon(resource_path(ICON_PATH)))
 
         self.setWindowOpacity(0.7)
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
@@ -222,7 +280,7 @@ class ShinyCounter(QMainWindow):
 
         # Initialize pygame mixer
         mixer.init()
-        self.add_sound = mixer.Sound(SOUND_FILE)
+        self.add_sound = mixer.Sound(resource_path(SOUND_FILE))
         self.add_sound.set_volume(SOUND_VOLUME)
 
         # Initialize variables
@@ -238,6 +296,21 @@ class ShinyCounter(QMainWindow):
         # Setup global hotkey listener
         self.listener = keyboard.Listener(on_press=self.on_press)
         self.listener.start()
+
+        # Setup menu bar
+        self.init_menu_bar()
+
+    def init_menu_bar(self):
+        menu_bar = self.menuBar()
+        options_menu = menu_bar.addMenu("Options")
+
+        options_action = QAction("Options", self)
+        options_action.triggered.connect(self.show_options_window)
+        options_menu.addAction(options_action)
+
+    def show_options_window(self):
+        self.options_window = OptionsWindow(self)
+        self.options_window.show()
 
     def on_press(self, key):
         if key == HOTKEY_ADD:
@@ -288,7 +361,6 @@ class ShinyCounter(QMainWindow):
         load_btn = QPushButton(LOAD_BUTTON_TEXT)
         load_btn.clicked.connect(self.show_pokemon_selector)
         main_layout.addWidget(load_btn)
-
 
     def show_pokemon_selector(self):
         dialog = PokemonSelectDialog(self, IMAGE_PATH)
