@@ -14,6 +14,7 @@ from PyQt5.QtCore import Qt, QEvent
 from pynput import keyboard
 from pygame import mixer
 
+
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS2
@@ -21,6 +22,7 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
 
 # Application Constants
 APP_NAME = "ShinyCounter"
@@ -44,6 +46,7 @@ STYLESHEET_PATH = f"{CONFIG_DIR}qstyle.qss"
 PROGRESS_FILE = f"{CONFIG_DIR}progress.csv"
 STATE_FILE = f"{CONFIG_DIR}last_state.txt"
 SOUND_FILE = f"{SOUNDS_DIR}click.wav"
+HOTKEY_FILE = f"{CONFIG_DIR}hotkeys.csv"
 
 # UI Dimensions
 POKEMON_IMAGE_SIZE = (100, 100)
@@ -84,6 +87,7 @@ POKEMON_FILE_PATTERN = "*.png"
 COUNTER_LABEL_CLASS = "CounterLabel"
 IMAGE_LABEL_CLASS = "ImageLabel"
 
+
 class OptionsWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -96,8 +100,45 @@ class OptionsWindow(QDialog):
 
     def get_available_keys(self):
         """Get all available keyboard.Key attributes"""
-        return [attr for attr in dir(keyboard.Key) 
+        return [attr for attr in dir(keyboard.Key)
                 if not attr.startswith('_') and attr != 'from_char']
+
+    def save_hotkeys(self):
+        main_hotkey = self.main_hotkey_combo.currentText()
+        secondary_hotkey = self.secondary_hotkey_combo.currentText()
+
+        if not os.path.exists(CONFIG_DIR):
+            os.makedirs(CONFIG_DIR)
+
+        with open(os.path.join(HOTKEY_FILE), 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Main HOTKEY", main_hotkey])
+            writer.writerow(["Secondary HOTKEY", secondary_hotkey])
+
+        # Update parent's hotkeys immediately
+        if self.parent:
+            self.parent.main_hotkey = getattr(keyboard.Key, main_hotkey)
+            self.parent.secondary_hotkey = None if secondary_hotkey == 'None' else getattr(keyboard.Key,
+                                                                                           secondary_hotkey)
+            self.parent.restart_listener()
+
+        self.accept()
+
+    def load_hotkeys(self):
+        try:
+            if os.path.exists(HOTKEY_FILE):
+                with open(HOTKEY_FILE, 'r') as file:
+                    reader = csv.reader(file)
+                    hotkeys = {rows[0]: rows[1] for rows in reader}
+
+                    # Set current dropdown selections
+                    main_hotkey = hotkeys.get("Main HOTKEY", "ctrl_r")
+                    self.main_hotkey_combo.setCurrentText(main_hotkey)
+
+                    secondary_hotkey = hotkeys.get("Secondary HOTKEY", "None")
+                    self.secondary_hotkey_combo.setCurrentText(secondary_hotkey)
+        except Exception as e:
+            print(f"Error loading hotkeys: {e}")
 
     def init_ui(self):
         layout = QVBoxLayout(self)
@@ -106,7 +147,7 @@ class OptionsWindow(QDialog):
         self.main_hotkey_label = QLabel("Main Hotkey:")
         self.main_hotkey_combo = QComboBox()
         self.main_hotkey_combo.addItems(self.get_available_keys())
-        
+
         # Secondary hotkey dropdown
         self.secondary_hotkey_label = QLabel("Secondary Hotkey:")
         self.secondary_hotkey_combo = QComboBox()
@@ -120,45 +161,6 @@ class OptionsWindow(QDialog):
         layout.addWidget(self.secondary_hotkey_label)
         layout.addWidget(self.secondary_hotkey_combo)
         layout.addWidget(save_button)
-
-def load_hotkeys(self):
-    try:
-        if os.path.exists(os.path.join(CONFIG_DIR, "hotkeys.csv")):
-            with open(os.path.join(CONFIG_DIR, "hotkeys.csv"), 'r') as file:
-                reader = csv.reader(file)
-                hotkeys = {rows[0]: rows[1] for rows in reader}
-                main_hotkey = hotkeys.get("Main HOTKEY", "ctrl_r")
-                secondary_hotkey = hotkeys.get("Secondary HOTKEY", "None")
-                
-                self.main_hotkey = getattr(keyboard.Key, main_hotkey)
-                self.secondary_hotkey = None if secondary_hotkey == 'None' else getattr(keyboard.Key, secondary_hotkey)
-        else:
-            self.main_hotkey = keyboard.Key.ctrl_r  # Default
-            self.secondary_hotkey = None
-    except Exception as e:
-        print(f"Error loading hotkeys: {e}")
-        self.main_hotkey = keyboard.Key.ctrl_r
-        self.secondary_hotkey = None
-
-    def save_hotkeys(self):
-        main_hotkey = self.main_hotkey_combo.currentText()
-        secondary_hotkey = self.secondary_hotkey_combo.currentText()
-
-        if not os.path.exists(CONFIG_DIR):
-            os.makedirs(CONFIG_DIR)
-
-        with open(os.path.join(CONFIG_DIR, "hotkeys.csv"), 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(["Main HOTKEY", main_hotkey])
-            writer.writerow(["Secondary HOTKEY", secondary_hotkey])
-
-        # Update parent's hotkeys immediately
-        if self.parent:
-            self.parent.main_hotkey = getattr(keyboard.Key, main_hotkey)
-            self.parent.secondary_hotkey = None if secondary_hotkey == 'None' else getattr(keyboard.Key, secondary_hotkey)
-            self.parent.restart_listener()
-
-        self.accept()
 
 
 class PokemonSelectDialog(QDialog):
@@ -275,6 +277,7 @@ class PokemonSelectDialog(QDialog):
         self.selected_pokemon = image_path
         self.accept()
 
+
 class ShinyCounter(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -334,8 +337,8 @@ class ShinyCounter(QMainWindow):
 
     def load_hotkeys(self):
         try:
-            if os.path.exists(os.path.join(CONFIG_DIR, "hotkeys.csv")):
-                with open(os.path.join(CONFIG_DIR, "hotkeys.csv"), 'r') as file:
+            if os.path.exists(HOTKEY_FILE):
+                with open(HOTKEY_FILE, 'r') as file:
                     reader = csv.reader(file)
                     hotkeys = {rows[0]: rows[1] for rows in reader}
                     self.main_hotkey = KEY_MAP.get(hotkeys.get("Main HOTKEY"), HOTKEY_ADD)
@@ -536,11 +539,13 @@ class ShinyCounter(QMainWindow):
         self.save_last_state()
         event.accept()
 
+
 def main():
     app = QApplication(sys.argv)
     window = ShinyCounter()
     window.show()
     sys.exit(app.exec_())
+
 
 if __name__ == "__main__":
     main()
