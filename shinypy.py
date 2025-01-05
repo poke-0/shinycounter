@@ -116,8 +116,6 @@ class OptionsWindow(QDialog):
         layout.addWidget(self.secondary_hotkey_input)
         layout.addWidget(save_button)
 
-        self.setLayout(layout)
-
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
             key = event.key()
@@ -293,6 +291,7 @@ class ShinyCounter(QMainWindow):
         self.load_progress()
         self.init_ui()
         self.load_last_state()
+        self.load_hotkeys()
 
         # Setup global hotkey listener
         self.listener = keyboard.Listener(on_press=self.on_press)
@@ -313,9 +312,25 @@ class ShinyCounter(QMainWindow):
         self.options_window = OptionsWindow(self)
         self.options_window.show()
 
+    def load_hotkeys(self):
+        try:
+            if os.path.exists(os.path.join(CONFIG_DIR, "hotkeys.csv")):
+                with open(os.path.join(CONFIG_DIR, "hotkeys.csv"), 'r') as file:
+                    reader = csv.reader(file)
+                    hotkeys = {rows[0]: rows[1] for rows in reader}
+                    self.main_hotkey = KEY_MAP.get(hotkeys.get("Main HOTKEY"), HOTKEY_ADD)
+                    self.secondary_hotkey = KEY_MAP.get(hotkeys.get("Secondary HOTKEY"), None)
+        except Exception as e:
+            print(f"Error loading hotkeys: {e}")
+            self.main_hotkey = HOTKEY_ADD
+            self.secondary_hotkey = None
+
     def on_press(self, key):
-        if key == HOTKEY_ADD:
+        if key == self.main_hotkey:
             self.increment_count()
+        elif key == self.secondary_hotkey:
+            # Handle secondary hotkey action here
+            pass
 
     def init_ui(self):
         # Load external stylesheet
@@ -420,30 +435,6 @@ class ShinyCounter(QMainWindow):
     def update_counter(self):
         self.counter_label.setText(str(self.counter))
 
-    def load_image(self):
-        options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Select Pokémon Image",
-            IMAGE_PATH,
-            "Images (*.png *.jpg *.bmp)",
-            options=options
-        )
-        if file_path:
-            self.current_image = QPixmap(file_path)
-            self.image_label.setPixmap(
-                self.current_image.scaled(
-                    POKEMON_IMAGE_SIZE[0],
-                    POKEMON_IMAGE_SIZE[1],
-                    Qt.KeepAspectRatio
-                )
-            )
-            # Extract Pokemon name from file path
-            self.current_pokemon = os.path.splitext(os.path.basename(file_path))[0]
-            self.load_pokemon_count()
-            self.save_progress()
-            self.save_last_state()
-
     def load_progress(self):
         try:
             os.makedirs(CONFIG_DIR, exist_ok=True)
@@ -518,13 +509,11 @@ class ShinyCounter(QMainWindow):
         self.save_last_state()
         event.accept()
 
-
 def main():
     app = QApplication(sys.argv)
     window = ShinyCounter()
     window.show()
     sys.exit(app.exec_())
-
 
 if __name__ == "__main__":
     main()
