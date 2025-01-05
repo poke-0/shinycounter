@@ -341,8 +341,13 @@ class ShinyCounter(QMainWindow):
                 with open(HOTKEY_FILE, 'r') as file:
                     reader = csv.reader(file)
                     hotkeys = {rows[0]: rows[1] for rows in reader}
-                    self.main_hotkey = KEY_MAP.get(hotkeys.get("Main HOTKEY"), HOTKEY_ADD)
-                    self.secondary_hotkey = KEY_MAP.get(hotkeys.get("Secondary HOTKEY"), None)
+                    main_hotkey = hotkeys.get("Main HOTKEY", "ctrl_r")
+                    secondary_hotkey = hotkeys.get("Secondary HOTKEY", "None")
+
+                    # Use getattr instead of KEY_MAP
+                    self.main_hotkey = getattr(keyboard.Key, main_hotkey, HOTKEY_ADD)
+                    self.secondary_hotkey = None if secondary_hotkey == 'None' else getattr(keyboard.Key,
+                                                                                            secondary_hotkey)
         except Exception as e:
             print(f"Error loading hotkeys: {e}")
             self.main_hotkey = HOTKEY_ADD
