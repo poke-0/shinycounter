@@ -278,6 +278,7 @@ class PokemonSelectDialog(QDialog):
         self.accept()
 
 
+
 class ShinyCounter(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -327,9 +328,24 @@ class ShinyCounter(QMainWindow):
         menu_bar = self.menuBar()
         options_menu = menu_bar.addMenu("Options")
 
-        options_action = QAction("Options", self)
-        options_action.triggered.connect(self.show_options_window)
-        options_menu.addAction(options_action)
+        # Add Hotkey Settings option
+        hotkey_action = QAction("Hotkey Settings", self)
+        hotkey_action.triggered.connect(self.show_options_window)
+        options_menu.addAction(hotkey_action)
+
+        # Add hunt mode toggle
+        self.hunt_mode_action = QAction("Double-Hunting", self)
+        self.hunt_mode_action.setCheckable(True)  # Makes it toggleable
+        self.hunt_mode_action.triggered.connect(self.toggle_hunt_mode)
+        options_menu.addAction(self.hunt_mode_action)
+
+    def toggle_hunt_mode(self):
+        if self.hunt_mode_action.isChecked():
+            self.hunt_mode_action.setText("Single-Hunting")
+            # Logic for switching to single hunting
+        else:
+            self.hunt_mode_action.setText("Double-Hunting")
+            # Logic for switching to double hunting
 
     def show_options_window(self):
         self.options_window = OptionsWindow(self)
