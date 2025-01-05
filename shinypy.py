@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFileDialog, QWidget, QDialog, QScrollArea,
     QGridLayout, QInputDialog, QTabWidget, QMenuBar, QMenu, QAction,
-    QLineEdit, QComboBox
+    QLineEdit, QComboBox, QFrame, QProgressBar
 )
 from PyQt5.QtGui import QIcon, QPixmap, QKeySequence
 from PyQt5.QtCore import Qt, QEvent
@@ -278,33 +278,11 @@ class PokemonSelectDialog(QDialog):
         self.accept()
 
 
-
-class ShinyCounter(QMainWindow):
-    def __init__(self):
-        super().__init__()
-
-        # Main Window Configuration
-        self.setWindowTitle(APP_NAME)
-        self.setGeometry(
-            WINDOW_POSITION[0],
-            WINDOW_POSITION[1],
-            WINDOW_SIZE[0],
-            WINDOW_SIZE[1]
-        )
-        self.setMinimumSize(*MINIMUM_WINDOW_SIZE)
-        self.setMaximumSize(*MAXIMUM_WINDOW_SIZE)
-        self.setWindowIcon(QIcon(resource_path(ICON_PATH)))
-
-        self.setWindowOpacity(0.7)
-        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
-
-        self.central_widget = QWidget(self)
-        self.setCentralWidget(self.central_widget)
-
-        # Initialize pygame mixer
-        mixer.init()
-        self.add_sound = mixer.Sound(SOUND_FILE)
-        self.add_sound.set_volume(SOUND_VOLUME)
+class HuntFrame(QFrame):
+    def __init__(self, parent=None, frame_number=1):
+        super().__init__(parent)
+        self.parent = parent
+        self.frame_number = frame_number
 
         # Initialize variables
         self.counter = DEFAULT_COUNTER
@@ -312,90 +290,26 @@ class ShinyCounter(QMainWindow):
         self.current_pokemon = None
         self.progress_data = {}
 
-        self.load_progress()
+        # Initialize pygame mixer for this frame
+        self.add_sound = mixer.Sound(resource_path(SOUND_FILE))
+        self.add_sound.set_volume(SOUND_VOLUME)
+
         self.init_ui()
+        self.load_progress()
         self.load_last_state()
-        self.load_hotkeys()
-
-        # Setup global hotkey listener
-        self.listener = keyboard.Listener(on_press=self.on_press)
-        self.listener.start()
-
-        # Setup menu bar
-        self.init_menu_bar()
-
-    def init_menu_bar(self):
-        menu_bar = self.menuBar()
-        options_menu = menu_bar.addMenu("Options")
-
-        # Add Hotkey Settings option
-        hotkey_action = QAction("Hotkey Settings", self)
-        hotkey_action.triggered.connect(self.show_options_window)
-        options_menu.addAction(hotkey_action)
-
-        # Add hunt mode toggle
-        self.hunt_mode_action = QAction("Double-Hunting", self)
-        self.hunt_mode_action.setCheckable(True)  # Makes it toggleable
-        self.hunt_mode_action.triggered.connect(self.toggle_hunt_mode)
-        options_menu.addAction(self.hunt_mode_action)
-
-    def toggle_hunt_mode(self):
-        if self.hunt_mode_action.isChecked():
-            self.hunt_mode_action.setText("Single-Hunting")
-            # Logic for switching to single hunting
-        else:
-            self.hunt_mode_action.setText("Double-Hunting")
-            # Logic for switching to double hunting
-
-    def show_options_window(self):
-        self.options_window = OptionsWindow(self)
-        self.options_window.show()
-
-    def load_hotkeys(self):
-        try:
-            if os.path.exists(HOTKEY_FILE):
-                with open(HOTKEY_FILE, 'r') as file:
-                    reader = csv.reader(file)
-                    hotkeys = {rows[0]: rows[1] for rows in reader}
-                    main_hotkey = hotkeys.get("Main HOTKEY", "ctrl_r")
-                    secondary_hotkey = hotkeys.get("Secondary HOTKEY", "None")
-
-                    # Use getattr instead of KEY_MAP
-                    self.main_hotkey = getattr(keyboard.Key, main_hotkey, HOTKEY_ADD)
-                    self.secondary_hotkey = None if secondary_hotkey == 'None' else getattr(keyboard.Key,
-                                                                                            secondary_hotkey)
-        except Exception as e:
-            print(f"Error loading hotkeys: {e}")
-            self.main_hotkey = HOTKEY_ADD
-            self.secondary_hotkey = None
-
-    def restart_listener(self):
-        """Restart the keyboard listener with new hotkeys"""
-        if hasattr(self, 'listener'):
-            self.listener.stop()  # Stop the current listener
-        self.listener = keyboard.Listener(on_press=self.on_press)
-        self.listener.start()
-
-    def on_press(self, key):
-        if key == self.main_hotkey:
-            self.increment_count()
-        elif key == self.secondary_hotkey:
-            # Handle secondary hotkey action here
-            pass
 
     def init_ui(self):
-        # Load external stylesheet
-        self.load_stylesheet()
+        # Main vertical layout for the frame
+        layout = QVBoxLayout()
 
-        # Main vertical layout
-        main_layout = QVBoxLayout()
-        self.central_widget.setLayout(main_layout)
-
-        # Display for the counter
+        # Counter Display
         self.counter_label = QLabel(str(self.counter))
         self.counter_label.setAlignment(Qt.AlignCenter)
         self.counter_label.setObjectName("CounterLabel")
-        main_layout.addWidget(self.counter_label)
+        font = self.counter_label.font()
+        font.setPointSize(20)
+        self.counter_label.setFont(font)
+        layout.addWidget(self.counter_label)
 
         # Button Panel
         button_layout = QHBoxLayout()
@@ -415,47 +329,21 @@ class ShinyCounter(QMainWindow):
         set_btn.clicked.connect(self.set_count)
         button_layout.addWidget(set_btn)
 
-        main_layout.addLayout(button_layout)
+        layout.addLayout(button_layout)
 
         # Pokemon Image Display
         self.image_label = QLabel(DEFAULT_IMAGE_TEXT)
         self.image_label.setAlignment(Qt.AlignCenter)
         self.image_label.setObjectName("ImageLabel")
         self.image_label.setMinimumSize(*POKEMON_IMAGE_SIZE)
-        main_layout.addWidget(self.image_label)
+        layout.addWidget(self.image_label)
 
         # Load Button
         load_btn = QPushButton(LOAD_BUTTON_TEXT)
         load_btn.clicked.connect(self.show_pokemon_selector)
-        main_layout.addWidget(load_btn)
+        layout.addWidget(load_btn)
 
-    def show_pokemon_selector(self):
-        dialog = PokemonSelectDialog(self, IMAGE_PATH)
-        if dialog.exec_() == QDialog.Accepted and dialog.selected_pokemon:
-            self.current_image = QPixmap(dialog.selected_pokemon)
-            self.image_label.setPixmap(
-                self.current_image.scaled(
-                    POKEMON_IMAGE_SIZE[0],
-                    POKEMON_IMAGE_SIZE[1],
-                    Qt.KeepAspectRatio
-                )
-            )
-            # Extract Pokemon name from file path
-            self.current_pokemon = os.path.splitext(os.path.basename(dialog.selected_pokemon))[0].split('-')[1]
-            self.load_pokemon_count()
-            self.save_progress()
-
-    def load_specific_image(self, image_path):
-        """Load a specific image file"""
-        if os.path.exists(image_path):
-            self.current_image = QPixmap(image_path)
-            self.image_label.setPixmap(
-                self.current_image.scaled(
-                    POKEMON_IMAGE_SIZE[0],
-                    POKEMON_IMAGE_SIZE[1],
-                    Qt.KeepAspectRatio
-                )
-            )
+        self.setLayout(layout)
 
     def increment_count(self):
         self.counter += 1
@@ -486,26 +374,55 @@ class ShinyCounter(QMainWindow):
     def update_counter(self):
         self.counter_label.setText(str(self.counter))
 
+    def show_pokemon_selector(self):
+        dialog = PokemonSelectDialog(self, resource_path(IMAGE_PATH))
+        if dialog.exec_() == QDialog.Accepted and dialog.selected_pokemon:
+            self.current_image = QPixmap(dialog.selected_pokemon)
+            self.image_label.setPixmap(
+                self.current_image.scaled(
+                    POKEMON_IMAGE_SIZE[0],
+                    POKEMON_IMAGE_SIZE[1],
+                    Qt.KeepAspectRatio
+                )
+            )
+            self.current_pokemon = os.path.splitext(os.path.basename(dialog.selected_pokemon))[0].split('-')[1]
+            self.load_pokemon_count()
+            self.save_progress()
+            self.save_last_state()
+
     def load_progress(self):
         try:
-            os.makedirs(CONFIG_DIR, exist_ok=True)
-            if os.path.exists(PROGRESS_FILE):
+            if os.path.exists(resource_path(PROGRESS_FILE)):
                 with open(resource_path(PROGRESS_FILE), 'r', newline='', encoding='utf-8') as file:
                     reader = csv.reader(file)
-                    self.progress_data = {row[0]: row[1] for row in reader if len(row) == 2}
+                    self.progress_data = {row[0]: row[1] for row in reader
+                                          if len(row) == 3 and int(row[2]) == self.frame_number}
         except Exception as e:
-            print(f"Error loading progress: {e}")
+            print(f"Error loading progress for frame {self.frame_number}: {e}")
             self.progress_data = {}
 
     def save_progress(self):
         if self.current_pokemon:
             try:
-                self.progress_data[self.current_pokemon] = str(self.counter)
-                os.makedirs(os.path.dirname(PROGRESS_FILE), exist_ok=True)
+                # Load existing data for all frames
+                all_progress = {}
+                if os.path.exists(resource_path(PROGRESS_FILE)):
+                    with open(resource_path(PROGRESS_FILE), 'r', newline='', encoding='utf-8') as file:
+                        reader = csv.reader(file)
+                        for row in reader:
+                            if len(row) == 3:
+                                key = (row[0], int(row[2]))  # (pokemon, frame_number)
+                                all_progress[key] = row[1]
+
+                # Update current frame's data
+                all_progress[(self.current_pokemon, self.frame_number)] = str(self.counter)
+
+                # Save all data back to file
+                os.makedirs(os.path.dirname(resource_path(PROGRESS_FILE)), exist_ok=True)
                 with open(resource_path(PROGRESS_FILE), 'w', newline='', encoding='utf-8') as file:
                     writer = csv.writer(file)
-                    for pokemon, count in self.progress_data.items():
-                        writer.writerow([pokemon, count])
+                    for (pokemon, frame), count in all_progress.items():
+                        writer.writerow([pokemon, count, frame])
             except Exception as e:
                 print(f"Error saving progress: {e}")
 
@@ -517,35 +434,182 @@ class ShinyCounter(QMainWindow):
             self.counter = DEFAULT_COUNTER
             self.update_counter()
 
+    def load_specific_image(self, image_path):
+        if os.path.exists(image_path):
+            self.current_image = QPixmap(image_path)
+            self.image_label.setPixmap(
+                self.current_image.scaled(
+                    POKEMON_IMAGE_SIZE[0],
+                    POKEMON_IMAGE_SIZE[1],
+                    Qt.KeepAspectRatio
+                )
+            )
+
     def load_last_state(self):
-        """Load the last used Pokemon"""
         try:
-            if os.path.exists(STATE_FILE):
+            if os.path.exists(resource_path(STATE_FILE)):
                 with open(resource_path(STATE_FILE), 'r', encoding='utf-8') as file:
-                    last_pokemon = file.read().strip()
-                    if last_pokemon:
-                        # Find the corresponding image file
-                        pokemon_files = glob.glob(os.path.join(IMAGE_PATH, POKEMON_FILE_PATTERN))
-                        for file_path in pokemon_files:
-                            if last_pokemon in os.path.basename(file_path):
-                                self.current_pokemon = last_pokemon
-                                self.load_specific_image(file_path)
-                                if self.current_pokemon in self.progress_data:
-                                    self.counter = int(self.progress_data[self.current_pokemon])
-                                    self.update_counter()
-                                break
+                    for line in file:
+                        parts = line.strip().split(',')
+                        if len(parts) == 2 and int(parts[1]) == self.frame_number:
+                            last_pokemon = parts[0]
+                            if last_pokemon:
+                                pokemon_files = glob.glob(os.path.join(resource_path(IMAGE_PATH), POKEMON_FILE_PATTERN))
+                                for file_path in pokemon_files:
+                                    if last_pokemon in os.path.basename(file_path):
+                                        self.current_pokemon = last_pokemon
+                                        self.load_specific_image(file_path)
+                                        if self.current_pokemon in self.progress_data:
+                                            self.counter = int(self.progress_data[self.current_pokemon])
+                                            self.update_counter()
+                                        break
         except Exception as e:
-            print(f"Error loading last state: {e}")
+            print(f"Error loading last state for frame {self.frame_number}: {e}")
 
     def save_last_state(self):
-        """Save the current Pokemon as last used"""
         if self.current_pokemon:
             try:
-                os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+                # Load existing states
+                states = {}
+                if os.path.exists(resource_path(STATE_FILE)):
+                    with open(resource_path(STATE_FILE), 'r', encoding='utf-8') as file:
+                        for line in file:
+                            parts = line.strip().split(',')
+                            if len(parts) == 2:
+                                states[int(parts[1])] = parts[0]
+
+                # Update current frame's state
+                states[self.frame_number] = self.current_pokemon
+
+                # Save all states back to file
+                os.makedirs(os.path.dirname(resource_path(STATE_FILE)), exist_ok=True)
                 with open(resource_path(STATE_FILE), 'w', encoding='utf-8') as file:
-                    file.write(self.current_pokemon)
+                    for frame_num, pokemon in states.items():
+                        file.write(f"{pokemon},{frame_num}\n")
             except Exception as e:
                 print(f"Error saving last state: {e}")
+
+
+class ShinyCounter(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        # Main Window Configuration
+        self.setWindowTitle(APP_NAME)
+        self.setGeometry(
+            WINDOW_POSITION[0],
+            WINDOW_POSITION[1],
+            WINDOW_SIZE[0],
+            WINDOW_SIZE[1]
+        )
+        self.setMinimumSize(*MINIMUM_WINDOW_SIZE)
+        self.setMaximumSize(*MAXIMUM_WINDOW_SIZE)
+        self.setWindowIcon(QIcon(resource_path(ICON_PATH)))
+
+        self.setWindowOpacity(0.7)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+
+        # Create central widget and main layout
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+        self.main_layout = QHBoxLayout()  # Changed to horizontal for side-by-side frames
+        self.central_widget.setLayout(self.main_layout)
+
+        # Initialize pygame mixer
+        mixer.init()
+
+        # Initialize hunt frames
+        self.hunt_frame_1 = HuntFrame(self, frame_number=1)
+        self.hunt_frame_2 = None
+
+        # Add first frame to layout
+        self.main_layout.addWidget(self.hunt_frame_1)
+
+        # Setup global hotkey listener
+        self.main_hotkey = HOTKEY_ADD
+        self.secondary_hotkey = None
+        self.load_hotkeys()
+        self.listener = keyboard.Listener(on_press=self.on_press)
+        self.listener.start()
+
+        # Setup menu bar
+        self.init_menu_bar()
+
+        # Load stylesheet
+        self.load_stylesheet()
+
+    def init_menu_bar(self):
+        menu_bar = self.menuBar()
+        options_menu = menu_bar.addMenu("Options")
+
+        # Add Hotkey Settings option
+        hotkey_action = QAction("Hotkey Settings", self)
+        hotkey_action.triggered.connect(self.show_options_window)
+        options_menu.addAction(hotkey_action)
+
+        # Add hunt mode toggle
+        self.hunt_mode_action = QAction("Double-Hunting", self)
+        self.hunt_mode_action.setCheckable(True)
+        self.hunt_mode_action.triggered.connect(self.toggle_hunt_mode)
+        options_menu.addAction(self.hunt_mode_action)
+
+    def toggle_hunt_mode(self):
+        if self.hunt_mode_action.isChecked():
+            # Switch to double hunting
+            if not self.hunt_frame_2:
+                self.hunt_frame_2 = HuntFrame(self, frame_number=2)
+            self.hunt_frame_2.show()
+            self.main_layout.addWidget(self.hunt_frame_2)
+            self.hunt_mode_action.setText("Single-Hunting")
+            self.adjustSize()
+        else:
+            # Switch to single hunting
+            if self.hunt_frame_2:
+                self.hunt_frame_2.hide()
+                self.main_layout.removeWidget(self.hunt_frame_2)
+                self.hunt_frame_2.deleteLater()
+                self.hunt_frame_2 = None
+            self.hunt_mode_action.setText("Double-Hunting")
+            self.adjustSize()
+
+    def show_options_window(self):
+        self.options_window = OptionsWindow(self)
+        self.options_window.show()
+
+    def on_press(self, key):
+        try:
+            if key == self.main_hotkey:
+                if self.hunt_mode_action.isChecked() and self.hunt_frame_2:
+                    self.hunt_frame_2.increment_count()
+                else:
+                    self.hunt_frame_1.increment_count()
+            elif key == self.secondary_hotkey:
+                self.hunt_frame_1.increment_count()
+        except AttributeError:
+            pass
+
+    def load_hotkeys(self):
+        try:
+            if os.path.exists(HOTKEY_FILE):
+                with open(resource_path(HOTKEY_FILE), 'r') as file:
+                    reader = csv.reader(file)
+                    hotkeys = {rows[0]: rows[1] for rows in reader}
+                    main_hotkey = hotkeys.get("Main HOTKEY", "ctrl_r")
+                    secondary_hotkey = hotkeys.get("Secondary HOTKEY", "None")
+
+                    self.main_hotkey = getattr(keyboard.Key, main_hotkey, HOTKEY_ADD)
+                    self.secondary_hotkey = None if secondary_hotkey == 'None' else getattr(keyboard.Key,
+                                                                                            secondary_hotkey)
+        except Exception as e:
+            print(f"Error loading hotkeys: {e}")
+            self.main_hotkey = HOTKEY_ADD
+            self.secondary_hotkey = None
+
+    def restart_listener(self):
+        if hasattr(self, 'listener'):
+            self.listener.stop()
+        self.listener = keyboard.Listener(on_press=self.on_press)
+        self.listener.start()
 
     def load_stylesheet(self):
         try:
@@ -555,9 +619,12 @@ class ShinyCounter(QMainWindow):
             print("Stylesheet not found. Using default styles.")
 
     def closeEvent(self, event):
-        """Override closeEvent to save progress when closing the window"""
-        self.save_progress()
-        self.save_last_state()
+        # Save state for both frames
+        self.hunt_frame_1.save_progress()
+        self.hunt_frame_1.save_last_state()
+        if self.hunt_frame_2:
+            self.hunt_frame_2.save_progress()
+            self.hunt_frame_2.save_last_state()
         event.accept()
 
 
