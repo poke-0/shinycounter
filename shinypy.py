@@ -5,7 +5,8 @@ import yaml
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFileDialog, QWidget, QDialog, QScrollArea,
-    QGridLayout, QInputDialog, QTabWidget, QMenuBar, QMenu, QAction, QLineEdit
+    QGridLayout, QInputDialog, QTabWidget, QMenuBar, QMenu, QAction,
+    QLineEdit
 )
 from PyQt5.QtGui import QIcon, QPixmap, QKeySequence
 from PyQt5.QtCore import Qt, QEvent
@@ -129,8 +130,8 @@ class OptionsWindow(QDialog):
         return super().eventFilter(obj, event)
 
     def save_hotkeys(self):
-        main_hotkey = self.main_hotkey_input.text()
-        secondary_hotkey = self.secondary_hotkey_input.text()
+        main_hotkey = self.main_hotkey_input.text().lower().replace(" ", "_")
+        secondary_hotkey = self.secondary_hotkey_input.text().lower().replace(" ", "_")
 
         if not os.path.exists(CONFIG_DIR):
             os.makedirs(CONFIG_DIR)
