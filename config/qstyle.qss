@@ -166,6 +166,10 @@ QTextEdit#genCompletionLabel {
     max-width: 400px;
 }
 
+/* HuntFrame Styling*/
+HuntFrame {
+}
+
 /* Label Styling */
 QLabel {
     color: #FFD7B5; /* Cream color for labels */
