@@ -1,0 +1,27 @@
+# - Transparency
+# - Always Top
+# - Sound when adding
+# - Global hotkey (ctrl, maybe configurable)
+# - Red Icon
+
+Ideas:
+
+- Tooltip / Highlight text = Name of Pokemon
+- Add global timer and increment timer (or just increment and add that one to the global timer)
+    - Add "adjust timer" button
+- Add Configuration menu:
+    - Add "always on top" checkbox
+    - Add "transparency" slider
+    - Add "sound" checkbox
+    - Add "sound" configuration (custom sound)
+    - Add "hotkey" configuration
+    - Add "filepath" configuration
+    - Add "increment" configuration
+    - Move "reset counter" to configuration menu
+    - Add "reset config to default" button
+- Add confirmation screen for resetting the counter
+
+# Unlikely:
+- Add link to shinytracker to track your pokemon
+- Android App?
+- Make it so you can add multiple Pokemon at once

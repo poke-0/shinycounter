@@ -1,0 +1,6 @@
+PyYAML~=6.0.2
+PyQt5~=5.15.11
+pynput~=1.7.7
+pygame~=2.6.0
+pillow~=10.4.0
+requests~=2.32.3
