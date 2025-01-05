@@ -26,10 +26,16 @@ def resource_path(relative_path):
 
 # Application Constants
 APP_NAME = "ShinyCounter"
-WINDOW_SIZE = (200, 230)
-MINIMUM_WINDOW_SIZE = (200, 230)
+WINDOW_SIZE = (200, 270)
+MINIMUM_WINDOW_SIZE = (200, 270)
 MAXIMUM_WINDOW_SIZE = (350, 345)
 WINDOW_POSITION = (1200, -460)
+
+# Double Hunting Window Sizes
+DOUBLE_WINDOW_SIZE = (300, 270)
+DOUBLE_MINIMUM_WINDOW_SIZE = (300, 270)
+DOUBLE_MAXIMUM_WINDOW_SIZE = (700, 345)
+DOUBLE_WINDOW_POSITION = (1200, -460)  # Adjusted for wider window
 
 HOTKEY_ADD = keyboard.Key.ctrl_r
 
@@ -302,6 +308,11 @@ class HuntFrame(QFrame):
         # Main vertical layout for the frame
         layout = QVBoxLayout()
 
+        # Reduce margins inside the frame
+        layout.setContentsMargins(2, 2, 2, 2)  # Left, Top, Right, Bottom
+        # Reduce spacing between elements inside the frame
+        layout.setSpacing(5)  # or any small number you prefer
+
         # Counter Display
         self.counter_label = QLabel(str(self.counter))
         self.counter_label.setAlignment(Qt.AlignCenter)
@@ -513,6 +524,7 @@ class ShinyCounter(QMainWindow):
         self.central_widget = QWidget()
         self.setCentralWidget(self.central_widget)
         self.main_layout = QHBoxLayout()  # Changed to horizontal for side-by-side frames
+        self.main_layout.setSpacing(1)
         self.central_widget.setLayout(self.main_layout)
 
         # Initialize pygame mixer
@@ -561,7 +573,16 @@ class ShinyCounter(QMainWindow):
             self.hunt_frame_2.show()
             self.main_layout.addWidget(self.hunt_frame_2)
             self.hunt_mode_action.setText("Single-Hunting")
-            self.adjustSize()
+
+            # Update window constraints for double hunting
+            self.setMinimumSize(*DOUBLE_MINIMUM_WINDOW_SIZE)
+            self.setMaximumSize(*DOUBLE_MAXIMUM_WINDOW_SIZE)
+            self.setGeometry(
+                DOUBLE_WINDOW_POSITION[0],
+                DOUBLE_WINDOW_POSITION[1],
+                DOUBLE_WINDOW_SIZE[0],
+                DOUBLE_WINDOW_SIZE[1]
+            )
         else:
             # Switch to single hunting
             if self.hunt_frame_2:
@@ -570,7 +591,16 @@ class ShinyCounter(QMainWindow):
                 self.hunt_frame_2.deleteLater()
                 self.hunt_frame_2 = None
             self.hunt_mode_action.setText("Double-Hunting")
-            self.adjustSize()
+
+            # Restore original window constraints
+            self.setMinimumSize(*MINIMUM_WINDOW_SIZE)
+            self.setMaximumSize(*MAXIMUM_WINDOW_SIZE)
+            self.setGeometry(
+                WINDOW_POSITION[0],
+                WINDOW_POSITION[1],
+                WINDOW_SIZE[0],
+                WINDOW_SIZE[1]
+            )
 
     def show_options_window(self):
         self.options_window = OptionsWindow(self)
