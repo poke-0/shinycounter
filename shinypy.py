@@ -33,7 +33,29 @@ KEY_MAP = {
     'enter': keyboard.Key.enter,
     'esc': keyboard.Key.esc,
     'tab': keyboard.Key.tab,
-    # Add more mappings as needed
+    'backspace': keyboard.Key.backspace,
+    'delete': keyboard.Key.delete,
+    'home': keyboard.Key.home,
+    'end': keyboard.Key.end,
+    'page_up': keyboard.Key.page_up,
+    'page_down': keyboard.Key.page_down,
+    'left': keyboard.Key.left,
+    'right': keyboard.Key.right,
+    'up': keyboard.Key.up,
+    'down': keyboard.Key.down,
+    'f1': keyboard.Key.f1,
+    'f2': keyboard.Key.f2,
+    'f3': keyboard.Key.f3,
+    'f4': keyboard.Key.f4,
+    'f5': keyboard.Key.f5,
+    'f6': keyboard.Key.f6,
+    'f7': keyboard.Key.f7,
+    'f8': keyboard.Key.f8,
+    'f9': keyboard.Key.f9,
+    'f10': keyboard.Key.f10,
+    'f11': keyboard.Key.f11,
+    'f12': keyboard.Key.f12,
+    # Add more key mappings as needed
 }
 
 # Application Constants
@@ -105,22 +127,20 @@ class OptionsWindow(QDialog):
         self.setModal(True)
         self.resize(300, 200)
         self.init_ui()
+        self.parent = parent  # Store the parent reference
         self.load_hotkeys()
+
 
     def init_ui(self):
         layout = QVBoxLayout(self)
 
         self.main_hotkey_label = QLabel("Main HOTKEY:")
         self.main_hotkey_input = QLineEdit()
-        self.main_hotkey_input.setPlaceholderText("Press a key")
-        self.main_hotkey_input.setReadOnly(True)
-        self.main_hotkey_input.installEventFilter(self)
+        self.main_hotkey_input.setPlaceholderText("Enter key name (e.g., ctrl_l)")
 
         self.secondary_hotkey_label = QLabel("Secondary HOTKEY:")
         self.secondary_hotkey_input = QLineEdit()
-        self.secondary_hotkey_input.setPlaceholderText("Press a key")
-        self.secondary_hotkey_input.setReadOnly(True)
-        self.secondary_hotkey_input.installEventFilter(self)
+        self.secondary_hotkey_input.setPlaceholderText("Enter key name (e.g., shift_r)")
 
         save_button = QPushButton("Save")
         save_button.clicked.connect(self.save_hotkeys)
@@ -131,27 +151,14 @@ class OptionsWindow(QDialog):
         layout.addWidget(self.secondary_hotkey_input)
         layout.addWidget(save_button)
 
-    def eventFilter(self, obj, event):
-        if event.type() == QEvent.KeyPress:
-            key = event.key()
-            key_name = QKeySequence(key).toString()
-            if obj == self.main_hotkey_input:
-                self.main_hotkey_input.setText(key_name)
-            elif obj == self.secondary_hotkey_input:
-                self.secondary_hotkey_input.setText(key_name)
-            return True
-        return super().eventFilter(obj, event)
-
     def load_hotkeys(self):
         try:
             if os.path.exists(os.path.join(CONFIG_DIR, "hotkeys.csv")):
                 with open(os.path.join(CONFIG_DIR, "hotkeys.csv"), 'r') as file:
                     reader = csv.reader(file)
                     hotkeys = {rows[0]: rows[1] for rows in reader}
-                    if "Main HOTKEY" in hotkeys:
-                        self.main_hotkey_input.setText(hotkeys["Main HOTKEY"].replace("_", " ").title())
-                    if "Secondary HOTKEY" in hotkeys:
-                        self.secondary_hotkey_input.setText(hotkeys["Secondary HOTKEY"].replace("_", " ").title())
+                    self.main_hotkey_input.setText(hotkeys.get("Main HOTKEY", ""))
+                    self.secondary_hotkey_input.setText(hotkeys.get("Secondary HOTKEY", ""))
         except Exception as e:
             print(f"Error loading hotkeys: {e}")
 
@@ -166,6 +173,13 @@ class OptionsWindow(QDialog):
             writer = csv.writer(file)
             writer.writerow(["Main HOTKEY", main_hotkey])
             writer.writerow(["Secondary HOTKEY", secondary_hotkey])
+
+        # Update parent's hotkeys immediately
+        if self.parent:
+            self.parent.main_hotkey = KEY_MAP.get(main_hotkey, HOTKEY_ADD)
+            self.parent.secondary_hotkey = KEY_MAP.get(secondary_hotkey, None)
+            # Restart the listener with new hotkeys
+            self.parent.restart_listener()
 
         self.accept()
 
@@ -352,6 +366,13 @@ class ShinyCounter(QMainWindow):
             print(f"Error loading hotkeys: {e}")
             self.main_hotkey = HOTKEY_ADD
             self.secondary_hotkey = None
+
+    def restart_listener(self):
+        """Restart the keyboard listener with new hotkeys"""
+        if hasattr(self, 'listener'):
+            self.listener.stop()  # Stop the current listener
+        self.listener = keyboard.Listener(on_press=self.on_press)
+        self.listener.start()
 
     def on_press(self, key):
         if key == self.main_hotkey:
