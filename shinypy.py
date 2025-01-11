@@ -406,34 +406,30 @@ class HuntFrame(QFrame):
             if os.path.exists(resource_path(PROGRESS_FILE)):
                 with open(resource_path(PROGRESS_FILE), 'r', newline='', encoding='utf-8') as file:
                     reader = csv.reader(file)
-                    self.progress_data = {row[0]: row[1] for row in reader
-                                          if len(row) == 3 and int(row[2]) == self.frame_number}
+                    self.progress_data = {row[0]: row[1] for row in reader if len(row) == 2}
         except Exception as e:
-            print(f"Error loading progress for frame {self.frame_number}: {e}")
+            print(f"Error loading progress: {e}")
             self.progress_data = {}
 
     def save_progress(self):
         if self.current_pokemon:
             try:
-                # Load existing data for all frames
+                # Load existing data
                 all_progress = {}
                 if os.path.exists(resource_path(PROGRESS_FILE)):
                     with open(resource_path(PROGRESS_FILE), 'r', newline='', encoding='utf-8') as file:
                         reader = csv.reader(file)
-                        for row in reader:
-                            if len(row) == 3:
-                                key = (row[0], int(row[2]))  # (pokemon, frame_number)
-                                all_progress[key] = row[1]
+                        all_progress = {row[0]: row[1] for row in reader if len(row) == 2}
 
-                # Update current frame's data
-                all_progress[(self.current_pokemon, self.frame_number)] = str(self.counter)
+                # Update current Pokémon's data
+                all_progress[self.current_pokemon] = str(self.counter)
 
                 # Save all data back to file
                 os.makedirs(os.path.dirname(resource_path(PROGRESS_FILE)), exist_ok=True)
                 with open(resource_path(PROGRESS_FILE), 'w', newline='', encoding='utf-8') as file:
                     writer = csv.writer(file)
-                    for (pokemon, frame), count in all_progress.items():
-                        writer.writerow([pokemon, count, frame])
+                    for pokemon, count in all_progress.items():
+                        writer.writerow([pokemon, count])
             except Exception as e:
                 print(f"Error saving progress: {e}")
 
@@ -460,43 +456,26 @@ class HuntFrame(QFrame):
         try:
             if os.path.exists(resource_path(STATE_FILE)):
                 with open(resource_path(STATE_FILE), 'r', encoding='utf-8') as file:
-                    for line in file:
-                        parts = line.strip().split(',')
-                        if len(parts) == 2 and int(parts[1]) == self.frame_number:
-                            last_pokemon = parts[0]
-                            if last_pokemon:
-                                pokemon_files = glob.glob(os.path.join(resource_path(IMAGE_PATH), POKEMON_FILE_PATTERN))
-                                for file_path in pokemon_files:
-                                    if last_pokemon in os.path.basename(file_path):
-                                        self.current_pokemon = last_pokemon
-                                        self.load_specific_image(file_path)
-                                        if self.current_pokemon in self.progress_data:
-                                            self.counter = int(self.progress_data[self.current_pokemon])
-                                            self.update_counter()
-                                        break
+                    last_pokemon = file.read().strip()
+                    if last_pokemon:
+                        pokemon_files = glob.glob(os.path.join(resource_path(IMAGE_PATH), POKEMON_FILE_PATTERN))
+                        for file_path in pokemon_files:
+                            if last_pokemon in os.path.basename(file_path):
+                                self.current_pokemon = last_pokemon
+                                self.load_specific_image(file_path)
+                                if self.current_pokemon in self.progress_data:
+                                    self.counter = int(self.progress_data[self.current_pokemon])
+                                    self.update_counter()
+                                break
         except Exception as e:
-            print(f"Error loading last state for frame {self.frame_number}: {e}")
+            print(f"Error loading last state: {e}")
 
     def save_last_state(self):
         if self.current_pokemon:
             try:
-                # Load existing states
-                states = {}
-                if os.path.exists(resource_path(STATE_FILE)):
-                    with open(resource_path(STATE_FILE), 'r', encoding='utf-8') as file:
-                        for line in file:
-                            parts = line.strip().split(',')
-                            if len(parts) == 2:
-                                states[int(parts[1])] = parts[0]
-
-                # Update current frame's state
-                states[self.frame_number] = self.current_pokemon
-
-                # Save all states back to file
                 os.makedirs(os.path.dirname(resource_path(STATE_FILE)), exist_ok=True)
                 with open(resource_path(STATE_FILE), 'w', encoding='utf-8') as file:
-                    for frame_num, pokemon in states.items():
-                        file.write(f"{pokemon},{frame_num}\n")
+                    file.write(self.current_pokemon)
             except Exception as e:
                 print(f"Error saving last state: {e}")
 
