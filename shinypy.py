@@ -545,6 +545,8 @@ class ShinyCounter(QMainWindow):
         options_menu.addAction(self.hunt_mode_action)
 
     def toggle_hunt_mode(self):
+        current_position = self.pos()  # Store the current position of the window
+
         if self.hunt_mode_action.isChecked():
             # Switch to double hunting
             if not self.hunt_frame_2:
@@ -556,12 +558,7 @@ class ShinyCounter(QMainWindow):
             # Update window constraints for double hunting
             self.setMinimumSize(*DOUBLE_MINIMUM_WINDOW_SIZE)
             self.setMaximumSize(*DOUBLE_MAXIMUM_WINDOW_SIZE)
-            self.setGeometry(
-                DOUBLE_WINDOW_POSITION[0],
-                DOUBLE_WINDOW_POSITION[1],
-                DOUBLE_WINDOW_SIZE[0],
-                DOUBLE_WINDOW_SIZE[1]
-            )
+            self.resize(*DOUBLE_WINDOW_SIZE)
         else:
             # Switch to single hunting
             if self.hunt_frame_2:
@@ -574,12 +571,9 @@ class ShinyCounter(QMainWindow):
             # Restore original window constraints
             self.setMinimumSize(*MINIMUM_WINDOW_SIZE)
             self.setMaximumSize(*MAXIMUM_WINDOW_SIZE)
-            self.setGeometry(
-                WINDOW_POSITION[0],
-                WINDOW_POSITION[1],
-                WINDOW_SIZE[0],
-                WINDOW_SIZE[1]
-            )
+            self.resize(*WINDOW_SIZE)
+
+        self.move(current_position)  # Restore the window to its original position
 
     def show_options_window(self):
         self.options_window = OptionsWindow(self)
