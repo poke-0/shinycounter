@@ -299,6 +299,12 @@ class HuntFrame(QFrame):
 
     def fetch_forms(self, selected_pokemon):
 
+        if not selected_pokemon:
+            return
+
+        if selected_pokemon not in list(self.pkmn_data.keys()):
+            return
+        
         now = time.time()
 
         if now - self.last_api_call_time < 0.5:
@@ -309,11 +315,6 @@ class HuntFrame(QFrame):
 
         self.last_api_call_time = now
 
-        if not selected_pokemon:
-            return
-
-        if selected_pokemon not in list(self.pkmn_data.keys()):
-            return
 
         try:
             # Fetch Pokémon species data from the API
