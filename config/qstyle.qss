@@ -1,0 +1,288 @@
+/* Global Background */
+QWidget {
+    background-color: #2A2021; /* Warm, earthy brown */
+    color: #FFD7B5; /* Soft cream for text */
+    border: none;
+}
+
+/* Main Window Styling */
+QMainWindow {
+    border: none;
+    margin: 0;
+    padding: 0;
+    background-color: #7B3B3F;
+}
+
+/* Tabs Styling */
+QTabWidget {
+    background-color: #2A2021;
+    border: none;
+}
+
+QTabWidget::tab-bar {
+    alignment: center;
+    background-color: #7B3B3F;
+}
+
+QTabWidget::pane {
+    border: none;
+}
+
+QTabBar::tab {
+    background-color: #7B3B3F; /* Darker brown */
+    color: #FFD7B5; /* Light cream text */
+    padding: 5px; /* Reduced padding */
+    border: none; /* Removed border */
+    /* min-width: 150px; Set minimum width */
+    width: 70px;
+}
+
+QTabBar::tab:selected {
+    background-color: #70363A; /* Slightly brighter brown */
+    color: #FFD7B5;
+}
+
+QTabBar::tab:hover {
+    background-color: #70363A; /* Same as selected for hover */
+    color: #FFD7B5;
+}
+
+QTabBar::tab:pressed {
+    background-color: #5A2A2A; /* Even darker brown for pressed state */
+    color: #FFD7B5;
+}
+
+QTabBar#mainTabBar::tab {
+    padding: 20px; /* Larger padding for main tabs */
+    font-size: 16px; /* Larger font size for main tabs */
+}
+
+QTabBar#dexTabBar::tab:first {
+    border-top-left-radius: 4px; /* Rounded corners for first tab */
+    border-bottom-left-radius: 4px;
+}
+
+QTabBar#dexTabBar::tab:last {
+    border-top-right-radius: 4px; /* Rounded corners for last tab */
+    border-bottom-right-radius: 4px;
+}
+
+/* Scrollbars Styling */
+QScrollBar:vertical, QScrollBar:horizontal {
+    background-color: #2A2021;
+    border: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical, QScrollBar::handle:horizontal {
+    background-color: #4A3A3A; /* Darker brown for scrollbar handle */
+    border-radius: 4px;
+    min-height: 5px;
+    min-width: 5px;
+}
+
+QScrollBar::handle:vertical:hover, QScrollBar::handle:horizontal:hover {
+    background-color: #5A4A4A; /* Lighter brown on hover */
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical,
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
+    border: none;
+}
+
+/* Scrollbar arrows (if needed) */
+QScrollBar::up-arrow:vertical, QScrollBar::down-arrow:vertical,
+QScrollBar::up-arrow:horizontal, QScrollBar::down-arrow:horizontal {
+    background: none;
+}
+
+/* Scrollbar page */
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical,
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
+    background: none;
+}
+
+/* QScrollArea */
+QScrollArea {
+    background-color: #2A2021;
+    border: none;
+}
+
+QScrollArea > QWidget {
+    background-color: #2A2021 !important;
+}
+
+QScrollArea::widget {
+    background-color: #2A2021 !important;
+}
+
+/* Buttons Styling */
+QPushButton {
+    background-color: #7B3B3F; /* Darker red background */
+    color: #FFD7B5; /* Light cream text */
+    padding: 5px; /* Reduced padding */
+    border: none; /* Removed border */
+    border-radius: 4px; /* Rounded corners */
+    font-size: 18px; /* Font size */
+    font-weight: bold;
+    font-family: Helvetica, sans-serif; /* Font family */
+    text-align: center; /* Center the text */
+    vertical-align: middle; /* Center the text vertically */
+}
+
+QPushButton:hover {
+    background-color: #4A3A3A; /* Slightly brighter brown on hover */
+}
+
+QPushButton:pressed {
+    background-color: #2A2021; /* Main background color when pressed */
+}
+
+QPushButton:disabled {
+    background-color: #2A2021; /* Main background color for disabled state */
+    color: #7A7A7A; /* Light gray text for disabled state */
+}
+
+QPushButton#SetButton {
+    background-color: #3A2A2A;
+}
+
+QPushButton:hover#SetButton {
+    background-color: #4A3A3A; /* Slightly brighter brown on hover */
+}
+
+QPushButton:pressed#SetButton {
+    background-color: #2A2021; /* Main background color when pressed */
+}
+
+/* Styles for QTextEdit widgets in the Stats tab */
+QTextEdit#fullCompletionLabel {
+    font-size: 18px;
+    font-weight: bold;
+    color: #FFD7B5;
+    /* background-color: #2A2021; */
+    background-color: #7B3B3F;
+    border-radius: 5px;
+    max-height: 50px;
+    max-width: 400px;
+}
+
+QTextEdit#genCompletionLabel {
+    font-size: 16px;
+    color: #FFD7B5;
+    /* background-color: #2A2021; */
+    background-color: #7B3B3F;
+    border-radius: 5px;
+    max-height: 30px;
+    max-width: 400px;
+}
+
+/* HuntFrame Styling*/
+HuntFrame {
+}
+
+/* Label Styling */
+QLabel {
+    color: #FFD7B5; /* Cream color for labels */
+}
+
+QLabel#CounterLabel {
+    font-size: 16pt;  /* Adjust size as needed */
+    font-weight: bold;
+    border: 5px solid #3A2A2A;
+    border-radius: 5px;
+}
+
+QLabel#ImageLabel {
+    font-size: 8pt;
+    border: 2px solid #3A2A2A;
+    border-radius: 5px;
+}
+
+QLabel#VolumeLabel {
+    font-size: 16pt;
+    font-weight: bold;
+}
+
+/* Frames and Borders */
+QFrame {
+    border: none; /* Remove border from frames */
+    border-radius: 5px;
+}
+
+/* Specific Frame Styling for Pokémon Entries */
+QFrame#pokemon-entry {
+    border: 2px solid #3A2A2A; /* Add border to Pokémon entries */
+    border-radius: 5px;
+}
+
+/* Comboboxes */
+QComboBox {
+    border: 2px solid #3A2A2A;
+    border-radius: 3px;
+    min-width: 6em;
+    font-family: Helvetica, sans-serif;
+    font-size: 10pt;
+    height: 18px;
+}
+
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 15px;
+    margin: 2px;
+    background: #7B3B3F;
+}
+
+QComboBox QAbstractItemView {
+    border: 2px solid #7B3B3F;
+    selection-background-color: #7B3B3F;
+    selection-color: #FFD7B5;
+}
+
+/* Search Bar Styling */
+QLineEdit {
+    background-color: #2A2021; /* Dark background */
+    color: #FFD7B5; /* Light cream text */
+    border: none; /* Removed border */
+    border-radius: 5px; /* Rounded corners */
+    padding: 5px; /* Padding inside the search bar */
+    font-size: 14px; /* Font size */
+}
+
+QLineEdit:focus {
+    border: 1px solid #4A3A3A; /* Slightly brighter border when focused */
+}
+
+/* Menu Bar Styling */
+
+QMenuBar {
+    spacing: 3px; /* spacing between menu bar items */
+    font-family: Helvetica, sans-serif;
+    font-size: 10pt;
+}
+
+QMenuBar::item {
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+QMenuBar::item:selected { /* when selected using mouse or keyboard */
+    background: #4A3A3A;
+}
+
+QMenuBar::item:pressed {
+    background: #4A3A3A;
+}
+
+/* Menu Styling */
+
+QMenu {
+    border: 1px solid #3A2A2A;
+}
+
+QMenu::item:selected { /* when user selects item using mouse or keyboard */
+    background-color: #3A2A2A;
+}
